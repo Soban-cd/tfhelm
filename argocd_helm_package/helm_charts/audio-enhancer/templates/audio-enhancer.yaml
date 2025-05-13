@@ -1,0 +1,91 @@
+# [START servicemesh_deployment_audio-enhancer-server]
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "audio-enhancer.fullname" . }}-server
+  labels:
+    {{- include "audio-enhancer.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "audio-enhancer.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "audio-enhancer.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "audio-enhancer.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: PORT
+              value: "{{ .Values.containerPort }}"
+            - name: dynamic_batching_tts_batch_size
+              value: "{{ .Values.env.dynamic_batching_tts_batch_size }}"
+            - name: dynamic_batching_microsleep
+              value: "{{ .Values.env.dynamic_batching_microsleep }}"
+          command:
+            [
+              "uvicorn",
+              "app.main:app",
+              "--host",
+              "0.0.0.0",
+              "--port",
+              "{{ .Values.containerPort }}",
+              "--log-level",
+              "info",
+            ]
+      restartPolicy: Always
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+# [END servicemesh_deployment_audio-enhancer-server]
+---
+# [START servicemesh_service_audioenhancersvc]
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "audio-enhancer.fullname" . }}svc # Changed name slightly to match convention
+  labels:
+    {{- include "audio-enhancer.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "audio-enhancer.selectorLabels" . | nindent 4 }}
+# [END servicemesh_service_audioenhancersvc]
+---

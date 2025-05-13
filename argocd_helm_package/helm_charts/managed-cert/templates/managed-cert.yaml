@@ -1,0 +1,28 @@
+{{- if .Values.adminCert.enabled }}
+# managed-cert-admin.yaml
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: {{ .Values.adminCert.name }}
+  {{- if .Values.adminCert.namespace }}
+  namespace: {{ .Values.adminCert.namespace }}
+  {{- end }}
+spec:
+  domains:
+    - {{ .Values.adminCert.domain }}
+{{- end }}
+---
+{{- if .Values.chatCert.enabled }}
+# managed-cert-chat.yaml
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: {{ .Values.chatCert.name }}
+  {{- if .Values.chatCert.namespace }}
+  namespace: {{ .Values.chatCert.namespace }}
+  {{- end }}
+spec:
+  domains:
+    - {{ .Values.chatCert.domain }}
+{{- end }}
+

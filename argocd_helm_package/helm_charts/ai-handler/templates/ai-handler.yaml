@@ -1,0 +1,171 @@
+# [START servicemesh_deployment_ai-handler-server]
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ai-handler.fullname" . }}-server
+  labels:
+    {{- include "ai-handler.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ai-handler.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "ai-handler.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "ai-handler.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+            - name: ENV
+              value: {{ .Values.env.ENV | quote }}
+            - name: PORT
+              value: {{ .Values.containerPort | quote }}
+
+            # Telegram - Consider using Kubernetes secrets
+            - name: BOT_TOKEN
+              value: {{ .Values.env.BOT_TOKEN | quote }}
+            - name: CALL_LOGS_CHAT_ID
+              value: {{ .Values.env.CALL_LOGS_CHAT_ID | quote }}
+            - name: ERROR_CHAT_ID
+              value: {{ .Values.env.ERROR_CHAT_ID | quote }}
+            - name: DEBUG
+              value: {{ .Values.env.DEBUG | quote }}
+
+            # LLM - Consider using Kubernetes secrets
+            - name: OPENAI_API_KEY
+              value: {{ .Values.env.OPENAI_API_KEY | quote }}
+            - name: AZURE_OPENAI_API_KEY
+              value: {{ .Values.env.AZURE_OPENAI_API_KEY | quote }}
+            - name: AZURE_OPENAI_ENDPOINT
+              value: {{ .Values.env.AZURE_OPENAI_ENDPOINT | quote }}
+            - name: AZURE_OPENAI_DEPLOYMENT_NAME
+              value: {{ .Values.env.AZURE_OPENAI_DEPLOYMENT_NAME | quote }}
+            - name: AZURE_OPENAI_API_VERSION
+              value: {{ .Values.env.AZURE_OPENAI_API_VERSION | quote }}
+            - name: AZURE_OPENAI_EMBEDDING_API_KEY
+              value: {{ .Values.env.AZURE_OPENAI_EMBEDDING_API_KEY | quote }}
+            - name: AZURE_OPENAI_EMBEDDING_ENDPOINT
+              value: {{ .Values.env.AZURE_OPENAI_EMBEDDING_ENDPOINT | quote }}
+            - name: AZURE_OPENAI_EMBEDDING_API_VERSION
+              value: {{ .Values.env.AZURE_OPENAI_EMBEDDING_API_VERSION | quote }}
+            - name: QDRANT_URL
+              value: {{ .Values.env.QDRANT_URL | quote }}
+            - name: QDRANT_API_KEY
+              value: {{ .Values.env.QDRANT_API_KEY | quote }}
+            - name: EMBEDDING_ENDPOINT
+              value: {{ .Values.env.EMBEDDING_ENDPOINT | quote }}
+            - name: EMBEDDING_MODEL
+              value: {{ .Values.env.EMBEDDING_MODEL | quote }}
+            - name: PRE_LOGIN_COLLECTION
+              value: {{ .Values.env.PRE_LOGIN_COLLECTION | quote }}
+            - name: POST_LOGIN_COLLECTION
+              value: {{ .Values.env.POST_LOGIN_COLLECTION | quote }}
+            - name: CONVERSATION_QA_COLLECTION
+              value: {{ .Values.env.CONVERSATION_QA_COLLECTION | quote }}
+            - name: PRODUCT_NOTES_COLLECTION
+              value: {{ .Values.env.PRODUCT_NOTES_COLLECTION | quote }}
+            - name: QDRANT_PORT
+              value: {{ .Values.env.QDRANT_PORT | quote }}
+            - name: QDRANT_UPLOAD_BATCH_SIZE
+              value: {{ .Values.env.QDRANT_UPLOAD_BATCH_SIZE | quote }}
+            - name: WHATSAPP_LINK
+              value: {{ .Values.env.WHATSAPP_LINK | quote }}
+
+            # Database - Consider using Kubernetes secrets
+            - name: PG_HOST
+              value: {{ .Values.env.PG_HOST | quote }}
+            - name: PG_DATABASE
+              value: {{ .Values.env.PG_DATABASE | quote }}
+            - name: PG_PORT
+              value: {{ .Values.env.PG_PORT | quote }}
+            - name: PG_USER
+              value: {{ .Values.env.PG_USER | quote }}
+            - name: PG_PASSWORD
+              value: {{ .Values.env.PG_PASSWORD | quote }}
+
+            # Service Account
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: {{ .Values.env.GOOGLE_APPLICATION_CREDENTIALS | quote }}
+            - name: GCP_BUCKET_NAME
+              value: {{ .Values.env.GCP_BUCKET_NAME | quote }}
+
+            # Local Model
+            - name: LOCAL_VLLM_WHISPER_ENDPOINT
+              value: {{ .Values.env.LOCAL_VLLM_WHISPER_ENDPOINT | quote }}
+            - name: LOCAL_VLLM_WHISPER_API_KEY
+              value: {{ .Values.env.LOCAL_VLLM_WHISPER_API_KEY | quote }}
+            - name: LOCAL_VLLM_WHISPER_MODEL
+              value: {{ .Values.env.LOCAL_VLLM_WHISPER_MODEL | quote }}
+            - name: LOCAL_DENOISER_ENDPOINT
+              value: {{ .Values.env.LOCAL_DENOISER_ENDPOINT | quote }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: {{ .Values.volumeMounts.serviceAccount.name }}
+              mountPath: {{ .Values.volumeMounts.serviceAccount.mountPath }}
+              readOnly: {{ .Values.volumeMounts.serviceAccount.readOnly }}
+
+      volumes:
+        - name: {{ .Values.volumes.serviceAccount.name }}
+          secret:
+            secretName: {{ .Values.volumes.serviceAccount.secret.secretName }}
+
+      restartPolicy: Always
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+# [END servicemesh_deployment_ai-handler-server]
+---
+# [START servicemesh_service_ai-handler-svc]
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ai-handler.fullname" . }}-svc # Using fullname template for service name
+  labels:
+    {{- include "ai-handler.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "ai-handler.selectorLabels" . | nindent 4 }}
+# [END servicemesh_service_ai-handler-svc]
+---

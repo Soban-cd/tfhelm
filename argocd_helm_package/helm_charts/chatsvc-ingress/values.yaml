@@ -1,0 +1,35 @@
+# Default values for chatsvc-ingress.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+name: reva-chat-ingress
+namespace: reva-chat
+
+annotations:
+  networking.gke.io/managed-certificates: chat-cert # Reference to ManagedCertificate
+  kubernetes.io/ingress.global-static-ip-name: reva-chat-ip
+
+host: reva-chat.revocall-staging.com
+
+paths:
+  root:
+    path: /
+    pathType: Prefix
+    backend:
+      service:
+        name: chatsvc-nodeport # Dependency: chat-service ClusterIP/NodePort service (needs clarification/creation)
+        port:
+          number: 80
+
+# Default backend (commented out in original YAML)
+# defaultBackend:
+#   enabled: false
+#   service:
+#     name: ai-handler-svc # Dependency: ai-handler service
+#     port:
+#       number: 8080
+
+# Common settings (if any)
+nameOverride: ""
+fullnameOverride: ""
+

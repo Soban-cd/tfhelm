@@ -1,0 +1,36 @@
+# Default values for adminsvc-ingress.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+name: reva-admin-ingress
+namespace: reva-chat
+
+annotations:
+  networking.gke.io/managed-certificates: admin-cert # Reference to ManagedCertificate
+  kubernetes.io/ingress.global-static-ip-name: reva-admin-ip
+  ingress.kubernetes.io/rewrite-target: /
+
+host: reva-admin.revocall-staging.com
+
+paths:
+  api:
+    path: /api
+    pathType: Prefix
+    backend:
+      service:
+        name: admin-backend-svc-nodeport # Dependency: admin-backend ClusterIP service
+        port:
+          number: 8000
+  root:
+    path: /
+    pathType: Prefix
+    backend:
+      service:
+        name: admin-frontend-svc-nodeport # Dependency: admin-frontend ClusterIP service
+        port:
+          number: 80
+
+# Common settings (if any)
+nameOverride: ""
+fullnameOverride: ""
+

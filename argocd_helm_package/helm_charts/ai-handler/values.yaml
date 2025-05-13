@@ -1,0 +1,151 @@
+# Default values for ai-handler.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: asia-southeast1-docker.pkg.dev/rewa-se/rewa/rewa-ai-handler
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets:
+  - name: reva-registry-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080 # Added targetPort based on original YAML
+
+containerPort: 8080 # Added containerPort based on original YAML
+
+env:
+  ENV: "production"
+
+  # Telegram - Consider using secrets
+  BOT_TOKEN: ""
+  CALL_LOGS_CHAT_ID: ""
+  ERROR_CHAT_ID: ""
+  DEBUG: "false"
+
+  # LLM - Consider using secrets
+  OPENAI_API_KEY: ""
+  AZURE_OPENAI_API_KEY: "8i7APcqmBwWPOhW6JEEy6M2DhzbSJojyqDvdXQ92uYn4HUKDZYoKJQQJ99BBAC77bzfXJ3w3AAAAACOGTDMX"
+  AZURE_OPENAI_ENDPOINT: "https://cheel-m7cr5t9e-southindia.openai.azure.com/"
+  AZURE_OPENAI_DEPLOYMENT_NAME: "gpt-4o"
+  AZURE_OPENAI_API_VERSION: "2024-05-01-preview"
+  AZURE_OPENAI_EMBEDDING_API_KEY: "7cmNAx5jP9ZnLGwmhYS6KwEzl31EuBQcb2KpEYV6lF5Mwc7p3KwUJQQJ99BBACHYHv6XJ3w3AAAAACOGlFnz"
+  AZURE_OPENAI_EMBEDDING_ENDPOINT: "https://cheel-m79wz39i-eastus2.openai.azure.com/"
+  AZURE_OPENAI_EMBEDDING_API_VERSION: "2024-05-01-preview"
+  QDRANT_URL: ""
+  QDRANT_API_KEY: ""
+  EMBEDDING_ENDPOINT: ""
+  EMBEDDING_MODEL: ""
+  PRE_LOGIN_COLLECTION: "pre_login_faq"
+  POST_LOGIN_COLLECTION: "post_login_faq"
+  CONVERSATION_QA_COLLECTION: "conversation_knowledge"
+  PRODUCT_NOTES_COLLECTION: "product_notes"
+  QDRANT_PORT: "6333"
+  QDRANT_UPLOAD_BATCH_SIZE: "100"
+  WHATSAPP_LINK: "www.whatsapp.com"
+
+  # Database - Consider using secrets
+  PG_HOST: "34.143.143.123"
+  PG_DATABASE: "rewa"
+  PG_PORT: "5432"
+  PG_USER: "ml-application"
+  PG_PASSWORD: "fidta3-reZguw-myccis"
+
+  # Service Account
+  GOOGLE_APPLICATION_CREDENTIALS: /secrets/service-account/service-account.json
+  GCP_BUCKET_NAME: "rewa_recording_staging"
+
+  # Local Model - Use Helm templating for internal service names if possible
+  LOCAL_VLLM_WHISPER_ENDPOINT: "http://whispervllmsvc:8085/v1" # Dependency: whisper-vllm service
+  LOCAL_VLLM_WHISPER_API_KEY: "-"
+  LOCAL_VLLM_WHISPER_MODEL: "/workspace/whisper-large-turbo"
+  LOCAL_DENOISER_ENDPOINT: "http://audioenhancersvc:8190/v0.1/audio-denoiser" # Dependency: audio-enhancer service
+
+# Volume for GCP service account key
+volumeMounts:
+  serviceAccount:
+    name: service-account-volume
+    mountPath: /secrets/service-account
+    readOnly: true
+
+volumes:
+  serviceAccount:
+    name: service-account-volume
+    secret:
+      secretName: reva-service-account # Name of the K8s secret containing the service account key
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+terminationGracePeriodSeconds: 5 # Added based on original YAML
+

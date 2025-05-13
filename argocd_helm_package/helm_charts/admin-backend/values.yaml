@@ -1,0 +1,165 @@
+# Default values for admin-backend.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: asia-southeast1-docker.pkg.dev/rewa-se/rewa/rewa-admin-backend
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets:
+  - name: reva-registry-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# Service definitions based on original YAML
+service:
+  loadBalancer:
+    type: LoadBalancer
+    port: 8000
+    targetPort: 8000
+  clusterIP:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+    nameSuffix: "-nodeport" # Suffix for the ClusterIP service name
+    namespace: "reva-chat" # Namespace for the ClusterIP service
+    annotations:
+      cloud.google.com/backend-config: '{"default": "admin-backend-config"}'
+
+containerPort: 8000 # Added containerPort based on original YAML
+
+livenessProbe:
+  path: /api/v1/health
+  port: 8000
+
+readinessProbe:
+  path: /api/v1/health
+  port: 8000
+
+env:
+  APP_PROTOCOL: "https://"
+  APP_URL: "reva-admin.revocall-staging.com"
+
+  # Session Secret - Consider using Kubernetes secrets
+  SESSION_SECRET: "thisisasamplesecret"
+
+  # Database - Consider using Kubernetes secrets
+  DATABASE_URL: "postgresql://ml-application:fidta3-reZguw-myccis@34.143.143.123:5432/rewa?schema=backend"
+
+  # JWT - Consider using Kubernetes secrets
+  JWT_SECRET: "thisisasamplesecret"
+  JWT_ACCESS_EXPIRATION_MINUTES: "30"
+  JWT_REFRESH_EXPIRATION_DAYS: "30"
+  JWT_RESET_PASSWORD_EXPIRATION_MINUTES: "10"
+  JWT_VERIFY_EMAIL_EXPIRATION_MINUTES: "10"
+
+  # SMTP - Consider using Kubernetes secrets
+  SMTP_HOST: "sandbox.smtp.mailtrap.io"
+  SMTP_PORT: "2525"
+  SMTP_USERNAME: "4c819e936c232a"
+  SMTP_PASSWORD: "da4ed0b2403f43"
+  EMAIL_FROM: "kelvinchong0272@gmail.com"
+  RESET_PASSWORD_URL: "https://reva-admin.revocall-staging.com/auth/jwt/reset-password"
+
+  # GCP
+  GCP_BUCKET_NAME: "rewa_knowledge_base_staging"
+  GCP_CREDENTIALS_FILE_PATH: /secrets/service-account/service-account.json
+
+  # Azure AD / SAML
+  AZURE_AD_ENTRYPOINT: https://login.microsoftonline.com/1f8e55fb-6904-4310-875b-033c72f0a18d/saml2
+  ISSUER: https://reva-admin.revocall-staging.com
+  CALLBACK_URL: https://reva-admin.revocall-staging.com/api/v1/auth/sso-callback
+  AZURE_AD_CERT: /secrets/admin-secret/rewa-admin.pem
+
+# Volume definitions based on original YAML
+volumeMounts:
+  serviceAccount:
+    name: service-account-volume
+    mountPath: /secrets/service-account
+    readOnly: true
+  adminSecret:
+    name: admin-secret-volume
+    mountPath: /secrets/admin-secret
+    readOnly: true # Assuming readOnly, adjust if needed
+
+volumes:
+  serviceAccount:
+    name: service-account-volume
+    secret:
+      secretName: reva-service-account # Name of the K8s secret containing the service account key
+  adminSecret:
+    name: admin-secret-volume
+    secret:
+      secretName: reva-admin-secret # Name of the K8s secret containing the admin cert/key
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+terminationGracePeriodSeconds: 5 # Added based on original YAML
+

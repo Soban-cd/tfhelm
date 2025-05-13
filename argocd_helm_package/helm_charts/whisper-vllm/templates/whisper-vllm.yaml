@@ -1,0 +1,81 @@
+# [START servicemesh_deployment_whisper-vllm-server]
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "whisper-vllm.fullname" . }}-server
+  labels:
+    {{- include "whisper-vllm.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "whisper-vllm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "whisper-vllm.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "whisper-vllm.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: PORT
+              value: "{{ .Values.containerPort }}"
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              nvidia-cuda-mps-control -d  # Start MPS
+              python -m app.main --port {{ .Values.containerPort }} --model openai/whisper-large-v3
+      restartPolicy: Always
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+# [END servicemesh_deployment_whisper-vllm-server]
+---
+# [START servicemesh_service_whispervllmsvc]
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "whisper-vllm.fullname" . }}svc # Changed name slightly to match convention
+  labels:
+    {{- include "whisper-vllm.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "whisper-vllm.selectorLabels" . | nindent 4 }}
+# [END servicemesh_service_whispervllmsvc]
+---

@@ -1,0 +1,134 @@
+# Default values for chat-service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: asia-southeast1-docker.pkg.dev/rewa-se/rewa/rewa-chat-service
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets:
+  - name: reva-registry-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# Service is not defined in the original YAML, add if needed
+# service:
+#   type: ClusterIP
+#   port: 3000
+
+containerPort: 3000 # Added containerPort based on original YAML
+
+env:
+  # Database
+  DATABASE_URL: "postgresql://ml-application:fidta3-reZguw-myccis@34.143.143.123:5432/rewa?schema=backend"
+
+  # JWT - Consider using secrets for sensitive values
+  JWT_SECRET: "thisisasamplesecret"
+  JWT_ACCESS_EXPIRATION_MINUTES: "30"
+  JWT_REFRESH_EXPIRATION_DAYS: "30"
+  JWT_RESET_PASSWORD_EXPIRATION_MINUTES: "10"
+  JWT_VERIFY_EMAIL_EXPIRATION_MINUTES: "10"
+
+  # Services - Use Helm templating for internal service names if possible
+  AI_HANDLER_ENDPOINT: "http://ai-handler-svc:8080"
+  ADMIN_BACKEND_ENDPOINT: "http://admin-backend-svc-nodeport:8000"
+
+  # Arab Bank Authentication Endpoint - Consider using secrets
+  ARAB_BANK_VALIDATION_ENDPOINT: "https://api-int.gcptest.arabbank.plc/neobanking/revolab/v1/validate/accesstoken"
+  ARAB_BANK_CLIENT_ID: "aroLO5xGXDgbLEYiCMBZlmkjzGIiFNQUXCazvRDFZv"
+
+  # Redis - Use Helm templating for internal service names if possible
+  REDIS_HOST: "redis-svc"
+  REDIS_PORT: "6379"
+
+  # Bot
+  BOTID: "REWA"
+
+  # GCP
+  GCP_BUCKET_NAME: "rewa_recording_staging"
+  GCP_CREDENTIALS_FILE_PATH: /secrets/service-account/service-account.json
+
+# Volume for GCP service account key
+volumeMounts:
+  serviceAccount:
+    name: service-account-volume
+    mountPath: /secrets/service-account
+    readOnly: true
+
+volumes:
+  serviceAccount:
+    name: service-account-volume
+    secret:
+      secretName: reva-service-account # Name of the K8s secret containing the service account key
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+terminationGracePeriodSeconds: 5 # Added based on original YAML
+

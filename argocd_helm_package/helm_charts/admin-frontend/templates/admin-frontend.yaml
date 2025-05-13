@@ -1,0 +1,104 @@
+# [START servicemesh_deployment_admin-frontend-server]
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "admin-frontend.fullname" . }}-server
+  labels:
+    {{- include "admin-frontend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "admin-frontend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "admin-frontend.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "admin-frontend.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ .Values.containerPort | quote }}
+            - name: APP_SERVER_URL
+              value: {{ .Values.env.APP_SERVER_URL | quote }}
+            - name: APP_CHAT_SERVER_URL
+              value: {{ .Values.env.APP_CHAT_SERVER_URL | quote }}
+            - name: APP_WEBSOCKET_CHAT_SERVER_URL
+              value: {{ .Values.env.APP_WEBSOCKET_CHAT_SERVER_URL | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+# [END servicemesh_deployment_admin-frontend-server]
+---
+# [START servicemesh_service_admin-frontend-svc_loadbalancer]
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "admin-frontend.fullname" . }}-svc # LoadBalancer Service
+  labels:
+    {{- include "admin-frontend.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.loadBalancer.type }}
+  ports:
+    - port: {{ .Values.service.loadBalancer.port }}
+      targetPort: {{ .Values.service.loadBalancer.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "admin-frontend.selectorLabels" . | nindent 4 }}
+# [END servicemesh_service_admin-frontend-svc_loadbalancer]
+---
+# [START servicemesh_service_admin-frontend-svc_clusterip]
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "admin-frontend.fullname" . }}-svc{{ .Values.service.clusterIP.nameSuffix }} # ClusterIP Service
+  labels:
+    {{- include "admin-frontend.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.clusterIP.type }}
+  ports:
+    - port: {{ .Values.service.clusterIP.port }}
+      targetPort: {{ .Values.service.clusterIP.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "admin-frontend.selectorLabels" . | nindent 4 }}
+# [END servicemesh_service_admin-frontend-svc_clusterip]
+---

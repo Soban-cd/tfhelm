@@ -1,0 +1,22 @@
+# Default values for managed-cert.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Settings for the admin certificate
+adminCert:
+  enabled: true
+  name: admin-cert
+  namespace: reva-chat
+  domain: reva-admin.revocall-staging.com
+
+# Settings for the chat certificate
+chatCert:
+  enabled: true
+  name: chat-cert
+  namespace: reva-chat
+  domain: reva-chat.revocall-staging.com
+
+# Common settings (if any, none identified from original YAML)
+nameOverride: ""
+fullnameOverride: ""
+

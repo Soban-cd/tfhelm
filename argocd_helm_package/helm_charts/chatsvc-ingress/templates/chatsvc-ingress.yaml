@@ -1,0 +1,51 @@
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: reva-test-ingress
+#   namespace: reva-chat
+#   annotations:
+#     networking.gke.io/managed-certificates: chat-cert
+#     kubernetes.io/ingress.global-static-ip-name: reva-chat-ip
+#     kubernetes.io/ingress.class: "gce"
+# spec:
+#   defaultBackend:
+#     service:
+#       name: ai-handler-svc
+#       port:
+#         number: 8080
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.name | default (include "chatsvc-ingress.fullname" .) }}
+  {{- if .Values.namespace }}
+  namespace: {{ .Values.namespace }}
+  {{- end }}
+  labels:
+    {{- include "chatsvc-ingress.labels" . | nindent 4 }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and .Values.defaultBackend .Values.defaultBackend.enabled }}
+  defaultBackend:
+    service:
+      name: {{ .Values.defaultBackend.service.name }}
+      port:
+        number: {{ .Values.defaultBackend.service.port.number }}
+  {{- end }}
+  rules:
+  - host: {{ .Values.host }}
+    http:
+      paths:
+      {{- if .Values.paths.root }}
+      - path: {{ .Values.paths.root.path }}
+        pathType: {{ .Values.paths.root.pathType }}
+        backend:
+          service:
+            name: {{ .Values.paths.root.backend.service.name }}
+            port:
+              number: {{ .Values.paths.root.backend.service.port.number }}
+      {{- end }}
+

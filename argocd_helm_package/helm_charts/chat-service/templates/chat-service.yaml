@@ -1,0 +1,117 @@
+# [START servicemesh_deployment_chat-server]
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chat-service.fullname" . }}-server
+  labels:
+    {{- include "chat-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "chat-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chat-service.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "chat-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "{{ .Values.containerPort }}"
+
+            # Database
+            - name: DATABASE_URL
+              value: {{ .Values.env.DATABASE_URL | quote }}
+
+            # JWT - Consider using Kubernetes secrets for these values
+            - name: JWT_SECRET
+              value: {{ .Values.env.JWT_SECRET | quote }}
+            - name: JWT_ACCESS_EXPIRATION_MINUTES
+              value: {{ .Values.env.JWT_ACCESS_EXPIRATION_MINUTES | quote }}
+            - name: JWT_REFRESH_EXPIRATION_DAYS
+              value: {{ .Values.env.JWT_REFRESH_EXPIRATION_DAYS | quote }}
+            - name: JWT_RESET_PASSWORD_EXPIRATION_MINUTES
+              value: {{ .Values.env.JWT_RESET_PASSWORD_EXPIRATION_MINUTES | quote }}
+            - name: JWT_VERIFY_EMAIL_EXPIRATION_MINUTES
+              value: {{ .Values.env.JWT_VERIFY_EMAIL_EXPIRATION_MINUTES | quote }}
+
+            # Services
+            - name: AI_HANDLER_ENDPOINT
+              value: {{ .Values.env.AI_HANDLER_ENDPOINT | quote }}
+            - name: ADMIN_BACKEND_ENDPOINT
+              value: {{ .Values.env.ADMIN_BACKEND_ENDPOINT | quote }}
+
+            # Arab Bank Authentication Endpoint - Consider using Kubernetes secrets for these values
+            - name: ARAB_BANK_VALIDATION_ENDPOINT
+              value: {{ .Values.env.ARAB_BANK_VALIDATION_ENDPOINT | quote }}
+            - name: ARAB_BANK_CLIENT_ID
+              value: {{ .Values.env.ARAB_BANK_CLIENT_ID | quote }}
+
+            # Redis
+            - name: REDIS_HOST
+              value: {{ .Values.env.REDIS_HOST | quote }}
+            - name: REDIS_PORT
+              value: {{ .Values.env.REDIS_PORT | quote }}
+
+            # Bot
+            - name: BOTID
+              value: {{ .Values.env.BOTID | quote }}
+
+            # GCP
+            - name: GCP_BUCKET_NAME
+              value: {{ .Values.env.GCP_BUCKET_NAME | quote }}
+            - name: GCP_CREDENTIALS_FILE_PATH
+              value: {{ .Values.env.GCP_CREDENTIALS_FILE_PATH | quote }}
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: {{ .Values.volumeMounts.serviceAccount.name }}
+              mountPath: {{ .Values.volumeMounts.serviceAccount.mountPath }}
+              readOnly: {{ .Values.volumeMounts.serviceAccount.readOnly }}
+
+      volumes:
+        - name: {{ .Values.volumes.serviceAccount.name }}
+          secret:
+            secretName: {{ .Values.volumes.serviceAccount.secret.secretName }}
+
+      restartPolicy: Always
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+# [END servicemesh_deployment_chat-server]
+---
