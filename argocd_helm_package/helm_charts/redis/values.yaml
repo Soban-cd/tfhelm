@@ -4,7 +4,7 @@
 
 replicaCount: 1
 
-namespace: argocd # Namespace from original YAML
+namespace: reva-chat # Namespace from original YAML
 
 redis:
   image:
