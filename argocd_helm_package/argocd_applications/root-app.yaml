@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/Soban-cd/tfhelm.git
     targetRevision: HEAD
-    path: apps  # Folder containing child Application YAMLs
+    path: argocd_helm_package/argocd_applications/apps  # Folder containing child Application YAMLs
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
