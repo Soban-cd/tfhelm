@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/Soban-cd/tfhelm.git # Placeholder: Replace with your Git repository URL
     path: helm_charts/whisper-vllm
-    targetRevision: main # Placeholder: Replace with your target branch or tag
+    targetRevision: HEAD # Placeholder: Replace with your target branch or tag
     helm:
       valueFiles:
         - values.yaml
